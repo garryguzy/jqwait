@@ -1,150 +1,84 @@
-/*
- * jqwait.js  
- *
- * version 0.1 test
- * 
- * by garry gu (garry.guzy@gmail.com)
- *
- * underscore-min.js needed for this plugin 
- *
- */
+!function ($) {
 
- /* for wait handle */
+/* JSWAIT CLASS DEFINITION
+  * ========================= */
+  var Jswait = function (element, options) {
+    this.$element = $(element)
+    this.options = options
+    this.init();
+  }
 
- /* define wait varibles */
-var derectives=[];
-var derectivechecklist=[];
-var jqwaitid;
-var jqwait_args;
-var jqwait_available=true;
- /* end fo varibles defining */
+  Jswait.prototype = {
 
- /* jqwait main function */
-function jqwait_init(){
-	$('body').append('<div id=\"popupwindow\" class="hidden"><\/div>');
-	$('body').append('<div id=\"popupmask\" class="hidden"><\/div>');
-}
-function jqwait(args){
-	if(jqwait_available){
-		jqwait_available=false;
-		if(!args.mask) args.mask='transparent';
-		if(!args.type) args.type='icon';
-		showmask(args.mask);
-		preventhandle();
-		jqwait_args=args;	
-		jqwait_showpopup(args.type);
-		if(args.start) args.start();
-		jqwaitid=setInterval(jqwait_check,1000);
-	}
-}
-function jqwait_check(){
-	var newderectives=[];
-	for (derective in derectives)	{
-		if(_.include(derectivechecklist,derectives[derective])){
-			if(jqwait_args.type=='text') popuptext({clear:false,text:derectives[derective]+'.........ok<br>'});
-			continue;
+    init: function () {
+    	_.bindAll(this);
+    },
+    _animate_loading:function() {
+		if (!this.loading.is(':visible')){
+			clearInterval(this.loadingTimer);
+			return;
 		}
-		else newderectives.push(derectives[derective]);
+		$('div', this.loading).css('top', (this.loadingFrame * -40) + 'px');
+	
+		this.loadingFrame = (this.loadingFrame + 1) % 12;
+	},
+	load:function(){
+    	this.loadingTimer=this.loadingFrame = 1;
+		this.$element.append(
+			this.loading	= $('<div id="jswait-loading" style="display:none;"><div></div></div>'),
+			this.overlay	= $('<div id="jswait-overlay" class="mask modal hide"></div>')
+		);
+		if(this.options.modal) overlay.addClass('ui-widget-overlay');
+		clearInterval(this.loadingTimer);
+		//this.overlay.show();
+		this.loading.show();
+		this.loadingTimer = setInterval(this._animate_loading, 66);	
+		this.waited=true;	
+	},
+	close:function(){
+		this.loading.remove();
+		this.overlay.remove();
+		this.loadingFrame = 1;
+		clearInterval(this.loadingTimer);
+		this.waited=false;
 	}
-	derectives=newderectives;
-	if(_.isEmpty(derectives)){
-		jqwait_close();
-		jqwait_args.end();
-	}
-}
-function jqwait_showpopup(type){
-	$("div#popupwindow").empty();
-	if(type=='icon'){
-		$("div#popupwindow").append('<img src="i/progress.gif"></img>');
-		$("div#popupwindow").css('width',32);
-		$("div#popupwindow").css('height',32);
-		$("div#popupwindow").css('border','none');
-		$("div#popupwindow").css('background','transparent');
-	}
-	else if(type=='text'){
-		$("div#popupwindow").css('border','1px solid #cccccc');
-		$("div#popupwindow").css('width',200);
-		$("div#popupwindow").css('height',100);
-		$("div#popupwindow").css('background','white');
-	}
-	centerpopup();
-	showpopup();
-}
-function jqwait_close(){
-	clearInterval(jqwaitid);
-	$("div#popupwindow").html('');
-	closemask();
-	closepopup();
-	releasepreventhandle();
-	jqwait_available=true;
-}
-/* end of jqwait */
+  }
+ /* CAROUSEL PLUGIN DEFINITION
+  * ========================== */
+
+  $.fn.jswait = function (option) {
+    return this.each(function () {
+      var $this = $(this)
+        , data = $this.data('jswait')
+        , options = $.extend({}, $.fn.jswait.defaults, typeof option == 'object' && option)
+        , action = typeof option == 'string' ? option :null;
+      if (!data) $this.data('jswait', (data = new Jswait(this, options)))
+      if(action){
+      	 data[action]();
+      }
+      else{
+      	data.load();
+      }
+    })
+  }
+
+  $.fn.jswait.defaults = {
+	modal:false
+  }
+
+  $.fn.jswait.Constructor = Jswait
 
 
-/* for popup */
-function getwindowsize(){
-	var windowWidth = window.innerWidth;
-	var windowHeight = window.innerHeight;
-	return {
-		width: windowWidth,
-		height: windowHeight
-	}
-}
-function getpopupwindowsize(){
-	var popupHeight = $("div#popupwindow").height();
-	var popupWidth = $("div#popupwindow").width();
-	return { width:popupWidth,height:popupHeight};
-}
+ /* JSwait DATA-API
+  * ================= */
 
-function showmask(mask){
-	windowsize=getwindowsize();
-	$("div#popupmask").height($('body').height());
-	$("div#popupmask").width(windowsize.width);
-	$("div#popupmask").css('background',mask);
-	$("div#popupmask").show('fast');	
-}
-function showpopup(){
-	$("div#popupwindow").show('fast');	
-}
-function preventhandle(){
-	$(document).bind('keypress',function(event,ui){
-		event.preventDefault();
-	})
-	$(document).bind('mousedown',function(event,ui){
-		event.preventDefault();
-	})
-}
-function releasepreventhandle(){
-	$(document).unbind('keypress');
-	$(document).unbind('mousedown');
-}
-
-function closepopup(){
-	$("div#popupwindow").hide('fast');
-}
-function closemask(){
-	$("div#popupmask").hide('fast');
-}
-
-function popuptext(args){//clear,
-	if(args.clear==false){
-		$("div#popupwindow").append(args.text);
-	}
-	if(args.clear==true){
-		$("div#popupwindow").html('');
-		$("div#popupwindow").append(args.text);
-	}
-}
-function centerpopup(){
-//request data for centering
-	windowsize=getwindowsize();
-	var popupHeight = $("#popupwindow").height();
-	var popupWidth = $("#popupwindow").width();
-	//centering
-	$("div#popupwindow").css({
-	"position": "absolute",
-	"top": windowsize.height/2-popupHeight/2,
-	"left": windowsize.width/2-popupWidth/2
-	});
-}
-/* end for popup */
+  // $(function () {
+    // $('body').on('click.carousel.data-api', '[data-slide]', function ( e ) {
+      // var $this = $(this), href
+        // , $target = $($this.attr('data-target') || (href = $this.attr('href')) && href.replace(/.*(?=#[^\s]+$)/, '')) //strip for ie7
+        // , options = !$target.data('modal') && $.extend({}, $target.data(), $this.data())
+      // $target.carousel(options)
+      // e.preventDefault()
+    // })
+  // })
+}(window.jQuery);
