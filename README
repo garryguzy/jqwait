@@ -1,0 +1,4 @@
+Jqwait.js is a simple jquery plugin.
+
+------2013.4.10-------
+Use $(element).jqwait() to load a wait instance and $(element).jqwait(close) to close wait .
